@@ -100,6 +100,17 @@ async function requestScrape(tabId: number, options: ScrapeOptions): Promise<Scr
     return res;
 }
 
+async function checkContext(tabId: number, options: ScrapeOptions) {
+    const target = options?.exportTarget === 'team' ? 'team' : 'chat';
+    return sendMessageToTab(tabId, { type: 'CHECK_CHAT_CONTEXT', target });
+}
+
+function defaultContextError(options: ScrapeOptions) {
+    return options?.exportTarget === 'team'
+        ? 'Open a team channel before exporting.'
+        : 'Open a chat conversation before exporting.';
+}
+
 function broadcastStatus(payload: ExportStatusPayload) {
     let enriched = { ...payload };
     const tabId = payload?.tabId;
@@ -161,9 +172,9 @@ function handleStartExportMessage(msg: any, sendResponse: (res: any) => void) {
         let startedAt;
         try {
             await ensureContentScript(tabId);
-            const ctx = await sendMessageToTab(tabId, { type: 'CHECK_CHAT_CONTEXT' });
+            const ctx = await checkContext(tabId, scrapeOptions);
             if (!ctx?.ok) {
-                const message = ctx?.reason || 'Open a chat conversation before exporting.';
+                const message = ctx?.reason || defaultContextError(scrapeOptions);
                 sendResponse({ error: message });
                 return;
             }
@@ -252,9 +263,9 @@ function handleStartExportFolderMessage(msg: any, sendResponse: (res: any) => vo
         let startedAt;
         try {
             await ensureContentScript(tabId);
-            const ctx = await sendMessageToTab(tabId, { type: 'CHECK_CHAT_CONTEXT' });
+            const ctx = await checkContext(tabId, scrapeOptions);
             if (!ctx?.ok) {
-                const message = ctx?.reason || 'Open a chat conversation before exporting.';
+                const message = ctx?.reason || defaultContextError(scrapeOptions);
                 sendResponse({ error: message });
                 return;
             }
@@ -322,9 +333,9 @@ function handleStartExportZipMessage(msg: any, sendResponse: (res: any) => void)
         let startedAt;
         try {
             await ensureContentScript(tabId);
-            const ctx = await sendMessageToTab(tabId, { type: 'CHECK_CHAT_CONTEXT' });
+            const ctx = await checkContext(tabId, scrapeOptions);
             if (!ctx?.ok) {
-                const message = ctx?.reason || 'Open a chat conversation before exporting.';
+                const message = ctx?.reason || defaultContextError(scrapeOptions);
                 sendResponse({ error: message });
                 return;
             }
